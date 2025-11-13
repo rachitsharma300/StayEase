@@ -1,155 +1,186 @@
+// context/AuthContext.jsx
 import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 
-// 1️⃣ Create Context
 const AppContext = createContext();
 
-// 2️⃣ Custom hook for easy usage
-export const useApp = () => useContext(AppContext);
+export const useApp = () => {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useApp must be used within AppProvider');
+  }
+  return context;
+};
 
-// 3️⃣ Provider
 export const AppProvider = ({ children }) => {
   const navigate = useNavigate();
 
-  /** 🔹 AUTH / USER STATE */
+  // Auth State
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem("user");
-    return storedUser ? JSON.parse(storedUser) : null;
+    try {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch (error) {
+      console.error("Error parsing user from localStorage:", error);
+      return null;
+    }
   });
-  const [token, setToken] = useState(
-    () => localStorage.getItem("token") || null
-  );
+
+  const [token, setToken] = useState(() => localStorage.getItem("token") || null);
   const [loading, setLoading] = useState(false);
 
-  /** 🔹 HOTEL / BOOKING STATE */
+  // Hotel & Booking State
   const [hotels, setHotels] = useState([]);
   const [selectedHotel, setSelectedHotel] = useState(null);
   const [myBookings, setMyBookings] = useState([]);
+  const [featuredHotels, setFeaturedHotels] = useState([]);
 
-  /** 🔹 AUTH FUNCTIONS */
+  // Auth Functions
   const login = async (username, password) => {
     try {
       setLoading(true);
       const res = await axios.post("/auth/login", { username, password });
-      const { token, username: uname, role } = res.data;
+      
+      if (res.data.token) {
+        const userData = { 
+          username: res.data.username, 
+          email: res.data.email,
+          role: res.data.role 
+        };
+        
+        setUser(userData);
+        setToken(res.data.token);
 
-      const userData = { username: uname, role };
-      setUser(userData);
-      setToken(token);
+        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("token", res.data.token);
 
-      localStorage.setItem("user", JSON.stringify(userData));
-      localStorage.setItem("token", token);
+        console.log("✅ Login successful");
 
-      console.log("✅ Login successful. Token saved:", token.substring(0, 20) + "...");
+        // Redirect based on role
+        if (res.data.role === "ADMIN") {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
 
-      if (role === "ADMIN") navigate("/admin");
-      else navigate("/");
-
-      return { success: true };
+        return { success: true, message: res.data.message };
+      }
     } catch (err) {
       console.error("❌ Login error:", err);
-      return {
-        success: false,
-        message: err.response?.data?.message || "Login failed",
-      };
+      const errorMessage = err.response?.data?.message || "Login failed";
+      return { success: false, message: errorMessage };
     } finally {
       setLoading(false);
     }
   };
 
   const register = async (fullName, username, email, password) => {
-    try {
-      setLoading(true);
-      const res = await axios.post("/auth/register", {
-        fullName,
-        username,
-        email,
-        password,
-      });
-      return { success: true, data: res.data };
-    } catch (err) {
-      console.error("❌ Registration error:", err);
-      return {
-        success: false,
-        message: err.response?.data?.message || "Registration failed",
+  try {
+    setLoading(true);
+    
+    // ✅ CORRECT: Create userData object from parameters
+    const userData = {
+      fullName: fullName,
+      username: username,
+      email: email,
+      password: password,
+      role: "USER"
+    };
+
+    console.log('📤 Registration data:', userData);
+
+    const res = await axios.post("/auth/register", userData, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('📦 Registration response:', res.data);
+    
+    if (res.data.id || res.data.success) {
+      console.log("✅ Registration successful");
+      return { 
+        success: true, 
+        message: res.data.message || "Registration successful" 
       };
-    } finally {
-      setLoading(false);
+    } else {
+      throw new Error(res.data.message || "Registration failed");
     }
-  };
+  } catch (err) {
+    console.error("❌ Registration error:", err);
+    const errorMessage = err.response?.data?.message || err.message || "Registration failed";
+    return { 
+      success: false, 
+      message: errorMessage 
+    };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const logout = () => {
     setUser(null);
     setToken(null);
+    setHotels([]);
+    setMyBookings([]);
     localStorage.removeItem("user");
     localStorage.removeItem("token");
     console.log("✅ Logged out successfully");
-    navigate("/auth/login");
+    navigate("/login");
   };
 
   const isAdmin = () => user?.role === "ADMIN";
 
-  /** 🔹 HOTEL FUNCTIONS */
-  const fetchHotels = async () => {
+  // Hotel Functions
+ const fetchHotels = async () => {
+  try {
+    console.log("📡 Fetching hotels...");
+    const res = await axios.get("/hotels");
+    
+    // Ensure hotels is always an array
+    const hotelsData = Array.isArray(res.data) ? res.data : [];
+    
+    setHotels(hotelsData);
+    console.log("✅ Hotels fetched:", hotelsData.length);
+    
+    // Set featured hotels (first 3) - ensure it's an array
+    setFeaturedHotels(hotelsData.slice(0, 3));
+    return hotelsData;
+  } catch (err) {
+    console.error("❌ Failed to fetch hotels:", err);
+    // Set empty arrays on error
+    setHotels([]);
+    setFeaturedHotels([]);
+    throw err;
+  }
+};
+
+  const fetchHotelById = async (id) => {
     try {
-      console.log("📡 Fetching hotels...");
-      const res = await axios.get("/hotels");
-      setHotels(res.data);
-      console.log("✅ Hotels fetched:", res.data.length);
+      const res = await axios.get(`/hotels/${id}`);
+      return res.data;
     } catch (err) {
-      console.error("❌ Failed to fetch hotels:", err.response?.data || err.message);
-      if (err.response?.status === 403) {
-        console.error("🔒 Token might be invalid. Try logging in again.");
-      }
+      console.error("❌ Failed to fetch hotel:", err);
+      throw err;
     }
   };
 
-  const selectHotel = (hotel) => {
-    setSelectedHotel(hotel);
-    navigate(`/hotels/${hotel.id}`);
-  };
-
-  /** 🔹 BOOKING FUNCTIONS */
-  const fetchMyBookings = async () => {
-    try {
-      console.log("📡 Fetching bookings...");
-      const res = await axios.get("/booking/my");
-      setMyBookings(res.data);
-      console.log("✅ Bookings fetched:", res.data.length);
-    } catch (err) {
-      console.error("❌ Failed to fetch bookings:", err.response?.data || err.message);
-      if (err.response?.status === 403) {
-        console.error("🔒 Token might be invalid. Try logging in again.");
-      }
-    }
-  };
-
-  const createBooking = async (bookingData) => {
-    try {
-      const res = await axios.post("/booking/create", bookingData);
-      await fetchMyBookings(); // refresh bookings
-      return { success: true, data: res.data };
-    } catch (err) {
-      console.error("❌ Booking failed:", err);
-      return {
-        success: false,
-        message: err.response?.data?.message || "Booking failed",
-      };
-    }
-  };
-
-  /** 🔹 SEARCH FUNCTION */
   const searchHotels = async (searchParams) => {
     try {
       console.log("🔍 Searching hotels with:", searchParams);
-      const res = await axios.get("/hotels/search", {
-        params: { location: searchParams.location },
-      });
+      const params = new URLSearchParams();
+      
+      if (searchParams.location) params.append('location', searchParams.location);
+      if (searchParams.minPrice) params.append('minPrice', searchParams.minPrice);
+      if (searchParams.maxPrice) params.append('maxPrice', searchParams.maxPrice);
+      if (searchParams.minRating) params.append('minRating', searchParams.minRating);
+
+      const res = await axios.get(`/hotels/search?${params}`);
       console.log("✅ Search results:", res.data.length);
       return { success: true, data: res.data };
     } catch (err) {
-      console.error("❌ Search failed:", err.response?.data || err.message);
+      console.error("❌ Search failed:", err);
       return {
         success: false,
         message: err.response?.data?.message || "Search failed",
@@ -157,9 +188,84 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Booking Functions
+// ✅ Also update fetchMyBookings method
+const fetchMyBookings = async () => {
+  try {
+    console.log("📡 Fetching bookings...");
+    const response = await axios.get("/bookings/my", {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.data.success) {
+      setMyBookings(response.data.bookings);
+      console.log("✅ Bookings fetched:", response.data.bookings.length);
+      return response.data.bookings;
+    } else {
+      throw new Error(response.data.message);
+    }
+  } catch (err) {
+    console.error("❌ Failed to fetch bookings:", err);
+    throw err;
+  }
+};
+
+const createBooking = async (bookingData) => {
+  try {
+    console.log('📦 Creating booking:', bookingData);
+    
+    // ✅ FIXED: Use correct endpoint
+    const response = await axios.post('/bookings', bookingData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    console.log('📦 Booking response:', response.data);
+
+    if (response.data.success) {
+      console.log('✅ Booking created successfully:', response.data.booking);
+      return { 
+        success: true, 
+        data: response.data.booking,
+        message: response.data.message 
+      };
+    } else {
+      console.error('❌ Booking creation failed:', response.data.message);
+      return { 
+        success: false, 
+        message: response.data.message 
+      };
+    }
+  } catch (err) {
+    console.error('❌ Booking creation error:', err);
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to create booking';
+    return { 
+      success: false, 
+      message: errorMessage 
+    };
+  }
+};
+
+  const selectHotel = (hotel) => {
+    setSelectedHotel(hotel);
+  };
+
+  // Initialize data
+  useEffect(() => {
+    if (user && token) {
+      fetchHotels();
+      fetchMyBookings();
+    }
+  }, [user, token]);
+
   return (
     <AppContext.Provider
       value={{
+        // Auth
         user,
         token,
         loading,
@@ -167,14 +273,20 @@ export const AppProvider = ({ children }) => {
         register,
         logout,
         isAdmin,
+
+        // Hotels
         hotels,
+        featuredHotels,
         fetchHotels,
+        fetchHotelById,
         selectedHotel,
         selectHotel,
+        searchHotels,
+
+        // Bookings
         myBookings,
         fetchMyBookings,
         createBooking,
-        searchHotels,
       }}
     >
       {children}
