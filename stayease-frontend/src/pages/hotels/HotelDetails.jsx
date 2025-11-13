@@ -23,7 +23,7 @@ const HotelDetails = () => {
 
   useEffect(() => {
     fetchHotelDetails();
-  }, [id]);
+  }, [id, bookingDates.checkIn, bookingDates.checkOut]);
 
   const fetchHotelDetails = async () => {
     try {
@@ -34,13 +34,14 @@ const HotelDetails = () => {
       const hotelResponse = await axios.get(`/hotels/${id}`);
       setHotel(hotelResponse.data);
 
-      // Fetch available rooms
-      const roomsResponse = await axios.get(`/hotels/${id}/rooms`, {
-        params: {
-          checkIn: bookingDates.checkIn,
-          checkOut: bookingDates.checkOut
-        }
-      });
+      // Fetch available rooms with date filtering
+      const params = {};
+      if (bookingDates.checkIn && bookingDates.checkOut) {
+        params.checkIn = bookingDates.checkIn;
+        params.checkOut = bookingDates.checkOut;
+      }
+
+      const roomsResponse = await axios.get(`/hotels/${id}/rooms`, { params });
       setRooms(roomsResponse.data);
 
     } catch (err) {
@@ -54,6 +55,11 @@ const HotelDetails = () => {
   const handleBookNow = (room) => {
     if (!user) {
       navigate('/login', { state: { returnUrl: `/hotel/${id}` } });
+      return;
+    }
+
+    if (!bookingDates.checkIn || !bookingDates.checkOut) {
+      setError('Please select check-in and check-out dates');
       return;
     }
 
@@ -83,7 +89,8 @@ const HotelDetails = () => {
     if (!bookingDates.checkIn || !bookingDates.checkOut) return 0;
     const checkIn = new Date(bookingDates.checkIn);
     const checkOut = new Date(bookingDates.checkOut);
-    return Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+    const timeDiff = checkOut.getTime() - checkIn.getTime();
+    return Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
   };
 
   if (loading) {
@@ -237,7 +244,7 @@ const HotelDetails = () => {
               </div>
             </div>
 
-            {/* Available Rooms */}
+            {/* Available Rooms - FIXED PRICE DISPLAY */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Rooms</h2>
               
@@ -266,6 +273,20 @@ const HotelDetails = () => {
                           <h3 className="text-lg font-semibold text-gray-900 mb-2">{room.type}</h3>
                           <p className="text-gray-600 mb-3">{room.description}</p>
                           
+                          {/* ✅ FIXED PRICE DISPLAY */}
+                          <div className="mb-4">
+                            <div className="text-2xl font-bold text-gray-900 mb-1">
+                              ₹{room.pricePerNight?.toLocaleString() || room.price?.toLocaleString()} 
+                              <span className="text-sm font-normal text-gray-600 ml-1">per night</span>
+                            </div>
+                            {nights > 0 && (
+                              <div className="text-lg font-semibold text-green-600">
+                                Total: ₹{((room.pricePerNight || room.price) * nights).toLocaleString()} 
+                                for {nights} night{nights > 1 ? 's' : ''}
+                              </div>
+                            )}
+                          </div>
+
                           <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 mb-4">
                             <div className="flex items-center">
                               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,14 +320,16 @@ const HotelDetails = () => {
                         {/* Price and Booking */}
                         <div className="mt-4 lg:mt-0 lg:ml-6 lg:text-right">
                           <div className="text-2xl font-bold text-gray-900 mb-1">
-                            ₹{room.price?.toLocaleString()}
+                            ₹{(room.pricePerNight || room.price)?.toLocaleString()}
                           </div>
                           <div className="text-sm text-gray-600 mb-2">per night</div>
+                          
                           {nights > 0 && (
-                            <div className="text-sm text-gray-600 mb-3">
-                              Total: ₹{(room.price * nights).toLocaleString()}
+                            <div className="text-lg font-semibold text-green-600 mb-3">
+                              ₹{((room.pricePerNight || room.price) * nights).toLocaleString()}
                             </div>
                           )}
+                          
                           <button
                             onClick={() => handleBookNow(room)}
                             className="w-full lg:w-auto bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-semibold transition duration-200"
