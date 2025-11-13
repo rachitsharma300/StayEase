@@ -2,56 +2,128 @@ package com.stayease.backend.controller;
 
 import com.stayease.backend.dto.BookingRequest;
 import com.stayease.backend.model.Booking;
+import com.stayease.backend.model.User;
+import com.stayease.backend.repository.UserRepository;
 import com.stayease.backend.service.BookingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/bookings")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000"})
 public class BookingController {
 
-    @Autowired private BookingService bookingService;
+    @Autowired
+    private BookingService bookingService;
 
-    // Create booking; user id derived from authenticated principal's username
+    @Autowired
+    private UserRepository userRepository;
+
+    // ✅ Helper method to get current user ID
+    private Long getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        return user.getId();
+    }
+
+    // ✅ CREATE booking - FIXED
     @PostMapping
-    public ResponseEntity<?> createBooking(@AuthenticationPrincipal UserDetails userDetails,
-                                           @RequestBody BookingRequest req) {
-        // note: userId resolved via repository in service; we can fetch user by username if needed
-        // For convenience, take username, map to id using repository:
-        // But BookingService.createBooking needs userId; find user id:
-        // We'll extract userId by looking up user via username (simple approach)
-        // injecting UserRepository would be alternative, but to keep controller light:
-        com.stayease.backend.repository.UserRepository ur = org.springframework.web.context.support.WebApplicationContextUtils
-                .getRequiredWebApplicationContext(((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes()).getRequest().getServletContext())
-                .getBean(com.stayease.backend.repository.UserRepository.class);
+    public ResponseEntity<?> createBooking(@RequestBody BookingRequest request) {
+        System.out.println("✅ POST /api/bookings - Creating booking");
+        try {
+            Long userId = getCurrentUserId();
+            System.out.println("📦 Booking request: " + request);
+            System.out.println("👤 User ID: " + userId);
 
-        var user = ur.findByUsername(userDetails.getUsername()).orElseThrow();
-        Booking booking = bookingService.createBooking(user.getId(), req);
-        return ResponseEntity.ok(booking);
+            Booking booking = bookingService.createBooking(userId, request);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Booking created successfully");
+            response.put("booking", booking);
+
+            System.out.println("✅ Booking created: " + booking.getId());
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            System.err.println("❌ Booking creation failed: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<?> myBookings(@AuthenticationPrincipal UserDetails userDetails) {
-        com.stayease.backend.repository.UserRepository ur = org.springframework.web.context.support.WebApplicationContextUtils
-                .getRequiredWebApplicationContext(((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes()).getRequest().getServletContext())
-                .getBean(com.stayease.backend.repository.UserRepository.class);
-        var user = ur.findByUsername(userDetails.getUsername()).orElseThrow();
-        List<Booking> bookings = bookingService.getBookingsByUser(user.getId());
-        return ResponseEntity.ok(bookings);
+    // ✅ GET my bookings - FIXED
+    @GetMapping("/my")
+    public ResponseEntity<?> getMyBookings() {
+        System.out.println("✅ GET /api/bookings/my");
+        try {
+            Long userId = getCurrentUserId();
+            List<Booking> bookings = bookingService.getBookingsByUser(userId);
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "bookings", bookings,
+                    "count", bookings.size()
+            ));
+        } catch (Exception e) {
+            System.err.println("❌ Failed to fetch bookings: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
 
-    @PostMapping("/{id}/cancel")
-    public ResponseEntity<?> cancelBooking(@AuthenticationPrincipal UserDetails userDetails, @PathVariable Long id) {
-        com.stayease.backend.repository.UserRepository ur = org.springframework.web.context.support.WebApplicationContextUtils
-                .getRequiredWebApplicationContext(((org.springframework.web.context.request.ServletRequestAttributes) org.springframework.web.context.request.RequestContextHolder.currentRequestAttributes()).getRequest().getServletContext())
-                .getBean(com.stayease.backend.repository.UserRepository.class);
-        var user = ur.findByUsername(userDetails.getUsername()).orElseThrow();
-        Booking b = bookingService.cancelBooking(user.getId(), id);
-        return ResponseEntity.ok(b);
+    // ✅ CANCEL booking - FIXED
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelBooking(@PathVariable Long id) {
+        System.out.println("✅ PUT /api/bookings/" + id + "/cancel");
+        try {
+            Long userId = getCurrentUserId();
+            Booking cancelled = bookingService.cancelBooking(userId, id);
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Booking cancelled successfully",
+                    "booking", cancelled
+            ));
+        } catch (Exception e) {
+            System.err.println("❌ Booking cancellation failed: " + e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
+    }
+
+    // ✅ GET booking by ID
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getBookingById(@PathVariable Long id) {
+        try {
+            Booking booking = bookingService.getBookingById(id)
+                    .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "booking", booking
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
 }
