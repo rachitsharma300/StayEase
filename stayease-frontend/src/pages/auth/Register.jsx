@@ -1,10 +1,10 @@
-// pages/auth/Register.jsx
+// pages/auth/Register.jsx - COMPLETE FIXED VERSION
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AuthContext';
 
 const Register = () => {
-  const { register, user } = useApp();
+  const { register, login, user } = useApp();
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -56,24 +56,40 @@ const Register = () => {
       return;
     }
 
-    const result = await register(
-      formData.fullName,
-      formData.username,
-      formData.email,
-      formData.password
-    );
-    
-    if (result.success) {
-      // Auto login after successful registration
-      const loginResult = await login(formData.username, formData.password);
-      if (loginResult.success) {
-        navigate('/');
+    try {
+      console.log('🔄 Starting registration...');
+      
+      // ✅ CORRECT: Call register with individual parameters
+      const result = await register(
+        formData.fullName,
+        formData.username,
+        formData.email,
+        formData.password
+      );
+      
+      console.log('📦 Registration result:', result);
+      
+      if (result.success) {
+        console.log('✅ Registration successful, attempting auto login...');
+        
+        // Auto login after successful registration
+        const loginResult = await login(formData.username, formData.password);
+        
+        if (loginResult.success) {
+          console.log('✅ Auto login successful');
+          navigate('/');
+        } else {
+          setError('Registration successful but auto login failed. Please login manually.');
+        }
+      } else {
+        setError(result.message);
       }
-    } else {
-      setError(result.message);
+    } catch (err) {
+      console.error('❌ Registration error:', err);
+      setError('Registration failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
   return (
@@ -112,7 +128,7 @@ const Register = () => {
           <div className="space-y-4">
             <div>
               <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                Full Name
+                Full Name *
               </label>
               <input
                 id="fullName"
@@ -128,7 +144,7 @@ const Register = () => {
 
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-                Username
+                Username *
               </label>
               <input
                 id="username"
@@ -144,7 +160,7 @@ const Register = () => {
 
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
+                Email Address *
               </label>
               <input
                 id="email"
@@ -160,7 +176,7 @@ const Register = () => {
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                Password *
               </label>
               <input
                 id="password"
@@ -176,7 +192,7 @@ const Register = () => {
 
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password
+                Confirm Password *
               </label>
               <input
                 id="confirmPassword"
@@ -222,6 +238,14 @@ const Register = () => {
                 'Create Account'
               )}
             </button>
+          </div>
+
+          <div className="text-center text-sm text-gray-600">
+            <p>Already have an account?{' '}
+              <Link to="/login" className="text-blue-600 hover:text-blue-500 font-medium">
+                Sign in here
+              </Link>
+            </p>
           </div>
         </form>
       </div>
