@@ -1,93 +1,204 @@
-// pages/booking/Payment.jsx
+// pages/booking/Payment.jsx - COMPLETE FIXED VERSION
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AuthContext';
 import axios from '../../api/axios';
+import { useToast } from '../../context/ToastContext';
 
 const Payment = () => {
   const { user } = useApp();
+  const { success, error } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   
   const bookingData = location.state?.bookingData;
   
-  const [paymentMethod, setPaymentMethod] = useState('card');
-  const [cardData, setCardData] = useState({
-    number: '',
-    name: '',
-    expiry: '',
-    cvv: ''
-  });
+  const [paymentMethod, setPaymentMethod] = useState('mock'); // ✅ Default to mock for testing
   const [isProcessing, setIsProcessing] = useState(false);
-  const [error, setError] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState('pending');
 
   useEffect(() => {
     if (!bookingData) {
+      console.log('❌ No booking data found, redirecting...');
       navigate('/');
+      return;
     }
+    console.log('💰 Payment page loaded with booking:', bookingData);
   }, [bookingData, navigate]);
 
-  const handleCardInput = (e) => {
-    let value = e.target.value;
-    
-    // Format card number with spaces
-    if (e.target.name === 'number') {
-      value = value.replace(/\s/g, '').replace(/(\d{4})/g, '$1 ').trim();
-      if (value.length > 19) value = value.slice(0, 19);
-    }
-    
-    // Format expiry date
-    if (e.target.name === 'expiry') {
-      value = value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2').slice(0, 5);
-    }
-    
-    // Limit CVV
-    if (e.target.name === 'cvv') {
-      value = value.replace(/\D/g, '').slice(0, 3);
-    }
-
-    setCardData({
-      ...cardData,
-      [e.target.name]: value
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
     });
   };
 
-  const handlePayment = async () => {
-    setIsProcessing(true);
-    setError('');
-
+  const processRazorpayPayment = async () => {
     try {
-      // Process payment
-      const paymentResponse = await axios.post('/payment/process', {
-        bookingId: bookingData.id,
+      setIsProcessing(true);
+      
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        error('Failed to load payment gateway');
+        return;
+      }
+
+      // Create order
+      const orderResponse = await axios.post('/payments/create-order', {
         amount: bookingData.totalAmount,
-        paymentMethod,
-        cardData: paymentMethod === 'card' ? cardData : undefined
+        bookingId: bookingData.id
       });
 
-      if (paymentResponse.data.success) {
-        // Update booking status
-        await axios.put(`/booking/${bookingData.id}/confirm`);
-        
-        navigate('/my-bookings', {
-          state: { 
-            message: 'Payment successful! Your booking is confirmed.',
-            bookingId: bookingData.id
-          }
-        });
-      } else {
-        setError('Payment failed. Please try again.');
+      if (!orderResponse.data.success) {
+        error(orderResponse.data.message);
+        return;
       }
+
+      const orderData = orderResponse.data;
+
+      // ✅ FIX: Remove process.env and use direct key
+      const razorpayKey = 'rzp_test_RexSddehHHkC49'; 
+
+      // Razorpay options
+      const options = {
+        key: razorpayKey, 
+        amount: orderData.amount,
+        currency: orderData.currency || 'INR',
+        name: 'StayEase Hotels',
+        description: `Booking for ${bookingData.hotelName}`,
+        // image: '/logo.png',
+        order_id: orderData.orderId,
+        handler: async function (response) {
+          try {
+            console.log('🔄 Verifying payment...', response);
+            
+            // Verify payment
+            const verifyResponse = await axios.post('/payments/verify', {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature
+            });
+
+            if (verifyResponse.data.success) {
+              success('Payment successful! Booking confirmed.');
+              setPaymentStatus('success');
+              
+              // Redirect to bookings page after 2 seconds
+              setTimeout(() => {
+                navigate('/my-bookings', {
+                  state: { 
+                    message: 'Payment successful! Your booking is confirmed.',
+                    bookingId: bookingData.id
+                  }
+                });
+              }, 2000);
+            } else {
+              error('Payment verification failed');
+              setPaymentStatus('failed');
+            }
+          } catch (err) {
+            console.error('Payment verification error:', err);
+            error('Payment verification failed');
+            setPaymentStatus('failed');
+          }
+        },
+        prefill: {
+          name: user?.username || 'Guest',
+          email: user?.email || 'guest@example.com',
+          contact: user?.phone || '9999999999'
+        },
+        notes: {
+          bookingId: bookingData.id,
+          hotel: bookingData.hotelName
+        },
+        theme: {
+          color: '#2563eb'
+        }
+      };
+
+      // Open Razorpay checkout
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+      
+      razorpay.on('payment.failed', function (response) {
+        console.error('❌ Payment failed:', response);
+        error(`Payment failed: ${response.error.description}`);
+        setPaymentStatus('failed');
+      });
+
     } catch (err) {
-      setError('Payment processing failed. Please try again.');
-      console.error('Payment error:', err);
+      console.error('Payment processing error:', err);
+      error('Payment processing failed: ' + err.message);
+      setPaymentStatus('failed');
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const processMockPayment = async () => {
+    try {
+      setIsProcessing(true);
+      
+      console.log('🔄 Processing mock payment for booking:', bookingData.id);
+      
+      // ✅ FIX: Use correct endpoint without /api prefix
+      const response = await axios.post(`/payments/mock-payment/${bookingData.id}`);
+      
+      console.log('📦 Mock payment response:', response.data);
+      
+      if (response.data.success) {
+        console.log('✅ Mock payment successful');
+        success('Mock payment successful! Booking confirmed.');
+        setPaymentStatus('success');
+        
+        setTimeout(() => {
+          navigate('/my-bookings', {
+            state: { 
+              message: 'Payment successful! Your booking is confirmed.',
+              bookingId: bookingData.id
+            }
+          });
+        }, 2000);
+      } else {
+        throw new Error(response.data.message || 'Mock payment failed');
+      }
+    } catch (err) {
+      console.error('❌ Mock payment error:', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Mock payment failed';
+      error('Mock payment failed: ' + errorMsg);
+      setPaymentStatus('failed');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (paymentMethod === 'razorpay') {
+      await processRazorpayPayment();
+    } else {
+      await processMockPayment();
+    }
+  };
+
   if (!bookingData) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900">No Booking Data</h2>
+          <p className="text-gray-600 mt-2">Please start a new booking</p>
+          <button 
+            onClick={() => navigate('/')}
+            className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+          >
+            Browse Hotels
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -96,7 +207,7 @@ const Payment = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Complete Payment</h1>
-          <p className="text-gray-600 mt-2">Secure payment powered by Razorpay</p>
+          <p className="text-gray-600 mt-2">Secure payment for your booking</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -105,122 +216,57 @@ const Payment = () => {
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Payment Method</h2>
 
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
-                  {error}
-                </div>
-              )}
-
               {/* Payment Method Selection */}
               <div className="grid grid-cols-2 gap-4 mb-6">
-                {[
-                  { id: 'card', label: 'Credit/Debit Card', icon: '💳' },
-                  { id: 'upi', label: 'UPI', icon: '📱' },
-                  { id: 'netbanking', label: 'Net Banking', icon: '🏦' },
-                  { id: 'wallet', label: 'Wallet', icon: '👛' }
-                ].map(method => (
-                  <button
-                    key={method.id}
-                    onClick={() => setPaymentMethod(method.id)}
-                    className={`p-4 border-2 rounded-lg text-left transition duration-200 ${
-                      paymentMethod === method.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="text-2xl mb-2">{method.icon}</div>
-                    <div className="font-medium text-gray-900">{method.label}</div>
-                  </button>
-                ))}
+                <button
+                  onClick={() => setPaymentMethod('razorpay')}
+                  className={`p-4 border-2 rounded-lg text-left transition duration-200 ${
+                    paymentMethod === 'razorpay'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                      R
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Razorpay</div>
+                      <div className="text-sm text-gray-600">Credit/Debit Card, UPI, Net Banking</div>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setPaymentMethod('mock')}
+                  className={`p-4 border-2 rounded-lg text-left transition duration-200 ${
+                    paymentMethod === 'mock'
+                      ? 'border-green-500 bg-green-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                      T
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">Test Payment</div>
+                      <div className="text-sm text-gray-600">Mock payment for testing</div>
+                    </div>
+                  </div>
+                </button>
               </div>
 
-              {/* Card Payment Form */}
-              {paymentMethod === 'card' && (
-                <div className="space-y-6">
-                  <div>
-                    <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      id="cardNumber"
-                      name="number"
-                      value={cardData.number}
-                      onChange={handleCardInput}
-                      placeholder="1234 5678 9012 3456"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                      maxLength={19}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Cardholder Name
-                    </label>
-                    <input
-                      type="text"
-                      id="cardName"
-                      name="name"
-                      value={cardData.name}
-                      onChange={handleCardInput}
-                      placeholder="John Doe"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="expiry" className="block text-sm font-medium text-gray-700 mb-1">
-                        Expiry Date
-                      </label>
-                      <input
-                        type="text"
-                        id="expiry"
-                        name="expiry"
-                        value={cardData.expiry}
-                        onChange={handleCardInput}
-                        placeholder="MM/YY"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                        maxLength={5}
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="cvv" className="block text-sm font-medium text-gray-700 mb-1">
-                        CVV
-                      </label>
-                      <input
-                        type="text"
-                        id="cvv"
-                        name="cvv"
-                        value={cardData.cvv}
-                        onChange={handleCardInput}
-                        placeholder="123"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                        maxLength={3}
-                      />
-                    </div>
-                  </div>
+              {/* Payment Status */}
+              {paymentStatus === 'success' && (
+                <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-lg mb-6">
+                  ✅ Payment successful! Redirecting...
                 </div>
               )}
 
-              {/* UPI Payment */}
-              {paymentMethod === 'upi' && (
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="upiId" className="block text-sm font-medium text-gray-700 mb-1">
-                      UPI ID
-                    </label>
-                    <input
-                      type="text"
-                      id="upiId"
-                      placeholder="yourname@upi"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                    />
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    You will be redirected to your UPI app for payment confirmation.
-                  </p>
+              {paymentStatus === 'failed' && (
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
+                  ❌ Payment failed. Please try again.
                 </div>
               )}
 
@@ -228,7 +274,7 @@ const Payment = () => {
               <button
                 onClick={handlePayment}
                 disabled={isProcessing}
-                className="w-full bg-green-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+                className="w-full bg-green-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <div className="flex items-center justify-center">
