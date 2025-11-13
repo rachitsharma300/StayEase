@@ -58,8 +58,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/hotels/**").hasAnyRole("USER", "ADMIN")
-                        .requestMatchers("/api/booking/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/hotels/**").permitAll()
+                        .requestMatchers("/api/booking/**").permitAll()
+                        .requestMatchers("/api/payments/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Admin only routes
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authProvider())
