@@ -1,7 +1,9 @@
 package com.stayease.backend.model;
 
 public enum PaymentStatus {
-    SUCCESS,
+    PENDING,
+    COMPLETED,
     FAILED,
-    PENDING
+    REFUNDED,
+    CANCELLED
 }
