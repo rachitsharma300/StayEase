@@ -1,19 +1,15 @@
 package com.stayease.backend.service;
 
-import com.stayease.backend.model.Payment;
 import com.razorpay.RazorpayException;
+import com.stayease.backend.model.Payment;
 import org.json.JSONObject;
 
+import java.util.Map;
+
 public interface PaymentService {
-
-    // Create Razorpay order → this is called before payment happens
-    JSONObject createRazorPayOrder(Long bookingId) throws RazorpayException;
-
-    // Called when Razorpay confirms payment success
-    Payment markAsPaid(Long bookingId, String razorpayPaymentId);
-
-    // (Optional fallback)
-    Payment payForBooking(Long bookingId, Double amount);
-
-
+    JSONObject createRazorpayOrder(Double amount, String currency, String receipt) throws RazorpayException;
+    Payment createPayment(Long bookingId, String razorpayOrderId);
+    Payment verifyPayment(String razorpayPaymentId, String razorpayOrderId, String razorpaySignature);
+    Payment getPaymentByBookingId(Long bookingId);
+    Payment mockPaymentSuccess(Long bookingId); // For testing
 }
