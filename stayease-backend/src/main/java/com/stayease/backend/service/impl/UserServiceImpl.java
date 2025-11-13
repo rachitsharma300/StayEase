@@ -25,20 +25,24 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Username already exists");
         }
 
+        // ✅ Check if email already exists
+        if (userRepository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Email already exists");
+        }
 
         Role userRole = Role.USER; // default
         if (dto.getRole() != null) {
-            userRole = Role.valueOf(dto.getRole().toUpperCase()); // convert String → Role enum
+            userRole = Role.valueOf(dto.getRole().toUpperCase());
         }
 
         var user = User.builder()
                 .username(dto.getUsername())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .fullName(dto.getFullName())
+                .email(dto.getEmail()) // ✅ ADDED
                 .role(userRole)
                 .build();
 
-        // Save user to repository
         return userRepository.save(user);
     }
 }
