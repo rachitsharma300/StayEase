@@ -9,15 +9,16 @@ const Checkout = () => {
   const location = useLocation();
 
   // Get room data from navigation state or selectedHotel
-  const room = location.state?.room || selectedHotel?.rooms?.[0];
+  const room = location.state?.room;
+  const hotel = location.state?.hotel || selectedHotel;
 
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     phone: '',
-    checkIn: '',
-    checkOut: '',
-    guests: 1,
+    checkIn: location.state?.checkIn || '',
+    checkOut: location.state?.checkOut || '',
+    guests: location.state?.guests || 1,
     specialRequests: ''
   });
 
@@ -35,12 +36,24 @@ const Checkout = () => {
     }
   }, [user]);
 
+  // Set dates from navigation state
+  useEffect(() => {
+    if (location.state?.checkIn && location.state?.checkOut) {
+      setFormData(prev => ({
+        ...prev,
+        checkIn: location.state.checkIn,
+        checkOut: location.state.checkOut,
+        guests: location.state.guests || 1
+      }));
+    }
+  }, [location.state]);
+
   // Redirect if no room selected
   useEffect(() => {
-    if (!room) {
+    if (!room || !hotel) {
       navigate('/');
     }
-  }, [room, navigate]);
+  }, [room, hotel, navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -57,7 +70,8 @@ const Checkout = () => {
     const checkOut = new Date(formData.checkOut);
     const nights = Math.ceil((checkOut - checkIn) / (1000 * 60 * 60 * 24));
     
-    return nights * room.price;
+    const roomPrice = room.pricePerNight || room.price;
+    return nights * roomPrice;
   };
 
   const calculateNights = () => {
@@ -71,6 +85,8 @@ const Checkout = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
+
+    console.log('🔄 Starting booking process...');
 
     // Validation
     if (!formData.fullName || !formData.email || !formData.phone || !formData.checkIn || !formData.checkOut) {
@@ -91,34 +107,66 @@ const Checkout = () => {
       return;
     }
 
+    const nights = calculateNights();
+    const total = calculateTotal();
+
     const bookingData = {
       roomId: room.id,
-      hotelId: room.hotelId,
+      hotelId: hotel.id,
       checkIn: formData.checkIn,
       checkOut: formData.checkOut,
       guests: parseInt(formData.guests),
-      totalAmount: calculateTotal(),
+      totalAmount: total,
       guestName: formData.fullName,
       guestEmail: formData.email,
       guestPhone: formData.phone,
       specialRequests: formData.specialRequests
     };
 
-    const result = await createBooking(bookingData);
-    
-    if (result.success) {
-      // Redirect to payment page or booking confirmation
-      navigate('/my-bookings', { 
-        state: { message: 'Booking confirmed successfully!' } 
-      });
-    } else {
-      setError(result.message);
+    console.log('📤 Submitting booking data:', bookingData);
+
+    try {
+      const result = await createBooking(bookingData);
+      console.log('📥 Booking result:', result);
+      
+      if (result.success) {
+        console.log('✅ Booking successful, redirecting to payment...');
+        
+        // ✅ FIX: Ensure we have booking ID for payment
+        const bookingId = result.data?.id;
+        if (!bookingId) {
+          throw new Error('Booking ID not received from server');
+        }
+
+        // Redirect to payment page with booking details
+        navigate('/payment', {
+          state: {
+            bookingData: {
+              id: bookingId,
+              ...result.data,
+              hotelName: hotel.name,
+              roomType: room.type,
+              nights: nights,
+              totalAmount: total,
+              checkIn: formData.checkIn,
+              checkOut: formData.checkOut,
+              guests: formData.guests
+            }
+          }
+        });
+      } else {
+        console.error('❌ Booking failed:', result.message);
+        setError(result.message || 'Failed to create booking. Please try again.');
+      }
+    } catch (err) {
+      console.error('❌ Booking error:', err);
+      setError('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   };
 
-  if (!room) {
+  if (!room || !hotel) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -137,6 +185,7 @@ const Checkout = () => {
 
   const nights = calculateNights();
   const total = calculateTotal();
+  const roomPrice = room.pricePerNight || room.price;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -154,7 +203,7 @@ const Checkout = () => {
               <h2 className="text-xl font-semibold text-gray-900 mb-6">Guest Information</h2>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-sm">
+                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
                   {error}
                 </div>
               )}
@@ -198,16 +247,16 @@ const Checkout = () => {
                   <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
                     Phone Number *
                   </label>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    required
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
-                    placeholder="Enter your phone number"
-                  />
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      required
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200"
+                      placeholder="Enter your phone number"
+                    />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -288,7 +337,7 @@ const Checkout = () => {
                       Processing Booking...
                     </div>
                   ) : (
-                    `Confirm Booking - ₹${total.toLocaleString()}`
+                    `Proceed to Payment - ₹${total.toLocaleString()}`
                   )}
                 </button>
               </form>
@@ -302,13 +351,38 @@ const Checkout = () => {
 
               {/* Hotel Info */}
               <div className="border-b border-gray-200 pb-4 mb-4">
-                <h3 className="font-semibold text-gray-900">{room.hotelName || 'Hotel'}</h3>
+                <h3 className="font-semibold text-gray-900">{hotel.name}</h3>
                 <p className="text-gray-600 text-sm mt-1">{room.type} Room</p>
                 <p className="text-gray-500 text-sm">{room.description}</p>
               </div>
 
-              {/* Dates */}
+              {/* Price Breakdown */}
               <div className="space-y-3 border-b border-gray-200 pb-4 mb-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Room price (₹{roomPrice?.toLocaleString()}/night)</span>
+                  <span>₹{(roomPrice * nights).toLocaleString()}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Nights</span>
+                  <span>{nights}</span>
+                </div>
+
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Taxes & Fees</span>
+                  <span>Included</span>
+                </div>
+
+                <div className="border-t border-gray-200 pt-3 mt-3">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total Amount</span>
+                    <span className="text-green-600">₹{total.toLocaleString()}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="space-y-2 text-sm mb-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Check-in</span>
                   <span className="font-medium">
@@ -322,32 +396,8 @@ const Checkout = () => {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Nights</span>
-                  <span className="font-medium">{nights}</span>
-                </div>
-                <div className="flex justify-between">
                   <span className="text-gray-600">Guests</span>
                   <span className="font-medium">{formData.guests}</span>
-                </div>
-              </div>
-
-              {/* Price Breakdown */}
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Room price ({nights} nights)</span>
-                  <span>₹{(room.price * nights).toLocaleString()}</span>
-                </div>
-                
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Taxes & Fees</span>
-                  <span>Included</span>
-                </div>
-
-                <div className="border-t border-gray-200 pt-3 mt-3">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span>₹{total.toLocaleString()}</span>
-                  </div>
                 </div>
               </div>
 
@@ -355,6 +405,12 @@ const Checkout = () => {
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <h4 className="font-semibold text-gray-900 mb-2">What's included:</h4>
                 <ul className="text-sm text-gray-600 space-y-1">
+                  {room.features?.slice(0, 3).map((feature, index) => (
+                    <li key={index} className="flex items-center">
+                      <span className="text-green-500 mr-2">✓</span>
+                      {feature}
+                    </li>
+                  ))}
                   <li className="flex items-center">
                     <span className="text-green-500 mr-2">✓</span>
                     Free WiFi
@@ -362,10 +418,6 @@ const Checkout = () => {
                   <li className="flex items-center">
                     <span className="text-green-500 mr-2">✓</span>
                     Air Conditioning
-                  </li>
-                  <li className="flex items-center">
-                    <span className="text-green-500 mr-2">✓</span>
-                    {room.hasBreakfast ? 'Breakfast Included' : 'No Breakfast'}
                   </li>
                 </ul>
               </div>
