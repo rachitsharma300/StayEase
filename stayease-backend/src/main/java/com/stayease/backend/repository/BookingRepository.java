@@ -21,6 +21,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByHotelId(Long hotelId);
     List<Booking> findByStatus(BookingStatus status);
 
+    List<Booking> findTop10ByOrderByCreatedAtDesc();
+
+
     @Query("SELECT b FROM Booking b ORDER BY b.createdAt DESC LIMIT :limit")
     List<Booking> findTopByOrderByCreatedAtDesc(int limit);
 
