@@ -47,13 +47,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 } else {
-                    System.err.println("❌ Invalid JWT token");
+                    System.err.println("Invalid JWT token");
                 }
             } else {
-                System.err.println("⚠️ No Authorization header or invalid format");
+                System.err.println("No Authorization header or invalid format");
             }
         } catch (Exception e) {
-            System.err.println("❌ JWT Authentication failed: " + e.getMessage());
+            System.err.println("JWT Authentication failed: " + e.getMessage());
             e.printStackTrace();
         }
 
