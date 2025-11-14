@@ -17,8 +17,8 @@ public class JwtUtils {
 
     public JwtUtils(@Value("${stayease.jwt.secret}") String secret,
                     @Value("${stayease.jwt.expirationMs}") long expirationMs) {
-        // key must be at least 256-bit for HS256
-        this.key = Keys.hmacShaKeyFor(Arrays.copyOf(secret.getBytes(), 32)); // pad/truncate
+
+        this.key = Keys.hmacShaKeyFor(Arrays.copyOf(secret.getBytes(), 32));
         this.expirationMs = expirationMs;
     }
 
