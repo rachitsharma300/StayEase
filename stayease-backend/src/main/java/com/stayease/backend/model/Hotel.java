@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -33,6 +34,10 @@ public class Hotel {
     private Double rating = 4.0;
     private Integer totalReviews = 0;
 
+    // test
+    private Integer totalRooms = 0;
+    private Integer availableRooms = 0;
+
     @ElementCollection
     private List<String> amenities;
 
@@ -43,7 +48,19 @@ public class Hotel {
     private String contactPhone;
     private String website;
 
+    // TIMESTAMP
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
     @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonManagedReference // Add this
     private List<Room> rooms;
+    // ✅ PrePersist aur PreUpdate
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+
 }
