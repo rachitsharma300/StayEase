@@ -23,8 +23,8 @@ const HotelList = () => {
     { name: 'Mumbai', image: 'https://images.unsplash.com/photo-1562976540-1502c2145186?w=300&h=200&fit=crop', hotels: 189 },
     { name: 'Delhi', image: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=300&h=200&fit=crop', hotels: 167 },
     { name: 'Bangalore', image: 'https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=300&h=200&fit=crop', hotels: 145 },
-    { name: 'Jaipur', image: 'https://images.unsplash.com/photo-1592478411213-6153e4ebc696?w=300&h=200&fit=crop', hotels: 98 },
-    { name: 'Kerala', image: 'https://images.unsplash.com/photo-1580105117397-f9b44cdf38a8?w=300&h=200&fit=crop', hotels: 76 }
+    { name: 'Jaipur', image: 'https://images.unsplash.com/photo-1477587458883-47145ed94245?q=80&w=870&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', hotels: 98 },
+    { name: 'Kerala', image: 'https://images.unsplash.com/photo-1715763301856-a35dfe4f0be7?q=80&w=1404&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D', hotels: 76 }
   ];
 
   // Safe featured hotels array
