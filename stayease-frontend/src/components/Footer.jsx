@@ -49,7 +49,7 @@ const Footer = () => {
 
   // Payment methods
   const paymentMethods = [
-    'visa', 'mastercard', 'paypal', 'razorpay', 'upi', 'netbanking'
+    'visa', 'razorpay', 'upi', 
   ];
 
   return (
@@ -186,7 +186,7 @@ const Footer = () => {
         </div>
 
         {/* Newsletter Section */}
-        <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 mb-8 border border-gray-700">
+        {/* <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl p-8 mb-8 border border-gray-700">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div className="mb-6 lg:mb-0">
               <h3 className="text-2xl font-bold mb-2">Stay Updated</h3>
@@ -205,7 +205,7 @@ const Footer = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Payment Methods */}
         <div className="border-t border-gray-700 pt-8 mb-8">
