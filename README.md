@@ -52,10 +52,10 @@ A full-featured Hotel Management System built with Spring Boot & React that supp
 ---
 
 ## 🛠 Tech Stack
-### 🧩 Backend
-| Component | Technology |
 
-Framework	Spring Boot 3.x
+### 🧩 Backend
+
+| Component | Technology |
 | Framework | **Spring Boot 3.5.6** |
 | Security | **Spring Security 6.5.5 + JWT** |
 | Database | **MySQL + Spring Data JPA** |
