@@ -93,7 +93,6 @@ A full-featured Hotel Management System built with Spring Boot & React that supp
 | Method | Endpoint | Description | Access |
 |--------|----------------------|------------------------|---------------|
 | Method | Endpoint             | Description            | Access        |
-| ------ | -------------------- | ---------------------- | ------------- |
 | POST   | `/api/auth/signup`   | User Registration      | **Public**    |
 | POST   | `/api/auth/login`    | Login & Token Issuance | **Public**    |
 | POST   | `/api/auth/validate` | Validate JWT Token     | **All Roles** |
