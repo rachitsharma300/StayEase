@@ -14,9 +14,9 @@ A full-featured Hotel Management System built with Spring Boot & React that supp
 👥 Role-Based Access Control
 | Role | Capabilities |
 |------|--------------|
-| **Admin**	Manage hotels • View all bookings • System oversight |
-| **Hotel** Manager	Manage rooms • View bookings • Update availability |
-| **User**	Browse hotels • Book rooms • View booking history |
+| **Admin**	| Manage hotels • View all bookings • System oversight |
+| **Hotel** | Manager	Manage rooms • View bookings • Update availability |
+| **User**	| Browse hotels • Book rooms • View booking history |
 
 🏨 Hotel & Room Management
 Create and manage hotels with detailed information
