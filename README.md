@@ -18,63 +18,87 @@ A full-featured Hotel Management System built with Spring Boot & React that supp
 | **Hotel** | Manager	Manage rooms • View bookings • Update availability |
 | **User**	| Browse hotels • Book rooms • View booking history |
 
-🏨 Hotel & Room Management
-Create and manage hotels with detailed information
+---
 
-Add rooms with amenities and pricing
+### 🏨 Hotel & Room Management
+- Create and manage hotels with detailed information
+- Add rooms with amenities and pricing
+- Real-time availability tracking
+- Search and filter hotels by location, price, amenities
 
-Real-time availability tracking
+---
 
-Search and filter hotels by location, price, amenities
+### 📅 Booking System
+- Secure room booking with date validation
+- Prevent double booking conflicts
+- Booking confirmation and status tracking
+- Cancellation and modification support
 
-📅 Booking System
-Secure room booking with date validation
+---
 
-Prevent double booking conflicts
+### 💳 Payment Integration
+- Razorpay payment gateway integration
+- Secure payment processing
+- Payment status tracking
 
-Booking confirmation and status tracking
+---
 
-Cancellation and modification support
+### 🔐 Security & Authentication
+- JWT-based secure authentication
+- Password hashing using BCrypt
+- Role-based API access restrictions
+- CORS enabled for frontend integration
 
-💳 Payment Integration
-Razorpay payment gateway integration
+---
 
-Secure payment processing
-
-Payment status tracking
-
-Refund handling
-
-🔐 Security & Authentication
-JWT-based secure authentication
-
-Password hashing using BCrypt
-
-Role-based API access restrictions
-
-CORS enabled for frontend integration
-
-🛠 Tech Stack
-🧩 Backend
-Component	Technology
+## 🛠 Tech Stack
+### 🧩 Backend
+| Component | Technology |
+|----------|------------|
 Framework	Spring Boot 3.x
-Security	Spring Security 6 + JWT
-Database	PostgreSQL + Spring Data JPA
-API Docs	Swagger / OpenAPI 3.1
-Testing	JUnit 5, Mockito
-Build Tool	Maven
-⚡ Frontend
-Component	Technology
-Framework	React 18
-Routing	React Router DOM
-HTTP Client	Axios
-Styling	Tailwind CSS
-State Management	React Context API
-☁️ Cloud Services
-Service	Provider
-Backend Deployment	Render
-Frontend Deployment	Netlify
-Database	PostgreSQL (Render)
+| Framework | **Spring Boot 3.5.6** |
+| Security | **Spring Security 6.5.5 + JWT** |
+| Database | **MySQL + Spring Data JPA** |
+| API Docs | **Swagger / OpenAPI 3.1** |
+| Testing | **JUnit 5, Mockito** |
+| Build Tool | **Maven** |
+
+---
+
+### ⚡ Frontend
+|----------|------------|
+| Component        | Technology            |
+| ---------------- | --------------------- |
+| Framework        | **React 18**          |
+| Routing          | **React Router DOM**  |
+| HTTP Client      | **Axios**             |
+| Styling          | **Tailwind CSS**      |
+| State Management | **React Context API** |
+
+---
+
+### ☁️ Cloud Services
+|----------|------------|
+| Service             | Provider                |
+| ------------------- | ----------------------- |
+| Backend Deployment  | **Render**              |
+| Frontend Deployment | **Netlify**             |
+| Database            | **PostgreSQL (Render)** |
+
+---
+📋 API Endpoints
+🔑 Authentication Endpoints
+|--------|----------------------|------------------------|---------------|
+| Method | Endpoint             | Description            | Access        |
+| ------ | -------------------- | ---------------------- | ------------- |
+| POST   | `/api/auth/signup`   | User Registration      | **Public**    |
+| POST   | `/api/auth/login`    | Login & Token Issuance | **Public**    |
+| POST   | `/api/auth/validate` | Validate JWT Token     | **All Roles** |
+
+---
+
+
+
 📋 API Endpoints
 🔑 Authentication Endpoints
 Method	Endpoint	Description	Access
