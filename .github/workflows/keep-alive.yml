@@ -1,0 +1,14 @@
+name: Keep Render Backend Alive
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"  
+  workflow_dispatch:       
+
+jobs:
+  keep_alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping backend to keep alive
+        run: |
+          curl -I https://stayease-klft.onrender.com || echo "Ping failed"
