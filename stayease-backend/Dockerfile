@@ -2,22 +2,19 @@ FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml
 COPY .mvn/ .mvn
 COPY mvnw .
 COPY pom.xml .
 
-# Make mvnw executable and download dependencies
 RUN chmod +x mvnw
-RUN ./mvnw dependency:go-offline -B
+RUN ./mvnw dependency:go-offline
 
-# Copy source code
 COPY src ./src
 
-# Build the application
-RUN ./mvnw clean package -DskipTests
+# Build jar
+RUN ./mvnw clean package spring-boot:repackage -DskipTests
 
 EXPOSE 8080
 
-# Run the application
-ENTRYPOINT ["java", "-jar", "target/stayease-0.0.1-SNAPSHOT.jar"]
+# run any jar inside target
+ENTRYPOINT ["sh", "-c", "java -jar $(ls target/*.jar)"]
