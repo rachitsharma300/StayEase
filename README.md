@@ -87,8 +87,9 @@ Framework	Spring Boot 3.x
 
 ---
 
-📋 API Endpoints
-🔑 Authentication Endpoints
+### 📋 API Endpoints
+## 🔑 Authentication Endpoints
+| Method | Endpoint | Description | Access |
 |--------|----------------------|------------------------|---------------|
 | Method | Endpoint             | Description            | Access        |
 | ------ | -------------------- | ---------------------- | ------------- |
