@@ -1,4 +1,5 @@
 # 🏨 StayEase - Hotel Management System (HMS)
+https://github.com/user-attachments/assets/6748bef8-d791-4b2d-99fa-ac3488b0c1b1
 
 A full-featured Hotel Management System built with Spring Boot & React that supports:
 
