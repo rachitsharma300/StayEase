@@ -19,13 +19,13 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 @Configuration
-@EnableWebSecurity  // ✅ YEH ADD KARO - IMPORTANT
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtUtils jwtUtils;
 
-    // ✅ Constructor Injection - @Autowired Remove Karo
+   
     public SecurityConfig(UserDetailsServiceImpl userDetailsService, JwtUtils jwtUtils) {
         this.userDetailsService = userDetailsService;
         this.jwtUtils = jwtUtils;
@@ -49,7 +49,7 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    // ✅ FIXED AuthenticationManager - Ye Use Karo
+    
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
         AuthenticationManagerBuilder authenticationManagerBuilder =
@@ -65,7 +65,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        // ✅ SWAGGER URLs ADD KARO
+                        //  SWAGGER URLs 
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -77,7 +77,7 @@ public class SecurityConfig {
 
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/hotels/**").permitAll()
-                        .requestMatchers("/api/bookings/**").permitAll() // ✅ Fix: /api/booking -> /api/bookings
+                        .requestMatchers("/api/bookings/**").permitAll() 
                         .requestMatchers("/api/search/**").permitAll()
                         .requestMatchers("/api/payments/**").hasAnyRole("USER", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -92,6 +92,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList(
+                "https://stay-ease-hms.netlify.app",
                 "http://localhost:5173",
                 "http://localhost:3000"
         ));
