@@ -1,6 +1,7 @@
 package com.stayease.backend.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -16,7 +17,10 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("StayEase Hotel Booking API")
                         .version("1.0")
-                        .description("Comprehensive Hotel Booking System API"))
+                        .description("Comprehensive Hotel Booking System API")
+                        .contact(new Contact()
+                                .name("StayEase Team")
+                                .email("support@stayease.com")))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new io.swagger.v3.oas.models.Components()
                         .addSecuritySchemes("bearerAuth",
