@@ -88,8 +88,8 @@ A full-featured Hotel Management System built with Spring Boot & React that supp
 
 ---
 
-### 📋 API Endpoints
-## 🔑 Authentication Endpoints
+## 📋 API Endpoints
+### 🔑 Authentication Endpoints
 | Method | Endpoint | Description | Access |
 |--------|----------------------|------------------------|---------------|
 | Method | Endpoint             | Description            | Access        |
@@ -99,42 +99,14 @@ A full-featured Hotel Management System built with Spring Boot & React that supp
 
 ---
 
+### 🏨 Hotel Endpoints
+|--------|----------------------|------------------|------------|
+| Method | Endpoint             | Description      | Access     |
+| ------ | -------------------- | ---------------- | ---------- |
+| GET    | `/api/hotels`        | Get all hotels   | **Public** |
+| GET    | `/api/hotels/{id}`   | Get hotel by ID  | **Public** |
+| GET    | `/api/hotels/search` | Search hotels    | **Public** |
+| POST   | `/api/hotels`        | Create new hotel | **Admin**  |
+| PUT    | `/api/hotels/{id}`   | Update hotel     | **Admin**  |
+| DELETE | `/api/hotels/{id}`   | Delete hotel     | **Admin**  |
 
-
-📋 API Endpoints
-🔑 Authentication Endpoints
-Method	Endpoint	Description	Access
-POST	/api/auth/signup	User Registration	Public
-POST	/api/auth/login	Login & Token Issuance	Public
-POST	/api/auth/validate	Validate JWT Token	All Roles
-🏨 Hotel Endpoints
-Method	Endpoint	Description	Access
-GET	/api/hotels	Get all hotels	Public
-GET	/api/hotels/{id}	Get hotel by ID	Public
-GET	/api/hotels/search	Search hotels	Public
-POST	/api/hotels	Create new hotel	Admin
-PUT	/api/hotels/{id}	Update hotel	Admin
-DELETE	/api/hotels/{id}	Delete hotel	Admin
-🛏 Room Endpoints
-Method	Endpoint	Description	Access
-GET	/api/rooms/hotel/{hotelId}	Get rooms by hotel	Public
-GET	/api/rooms/{id}	Get room by ID	Public
-POST	/api/rooms	Create new room	Admin
-PUT	/api/rooms/{id}	Update room	Admin
-DELETE	/api/rooms/{id}	Delete room	Admin
-📅 Booking Endpoints
-Method	Endpoint	Description	Access
-POST	/api/bookings	Create new booking	User
-GET	/api/bookings/user	Get user bookings	User
-GET	/api/bookings/{id}	Get booking by ID	User/Admin
-PUT	/api/bookings/{id}/cancel	Cancel booking	User
-GET	/api/bookings	Get all bookings	Admin
-💳 Payment Endpoints
-Method	Endpoint	Description	Access
-POST	/api/payments/create-order	Create payment order	User
-POST	/api/payments/verify	Verify payment	User
-GET	/api/payments/booking/{bookingId}	Get payment by booking	User
-🔍 Search Endpoints
-Method	Endpoint	Description	Access
-GET	/api/search/hotels	Search hotels by criteria	Public
-GET	/api/search/availability	Check room availability	Public
