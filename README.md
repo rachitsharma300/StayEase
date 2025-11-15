@@ -138,3 +138,169 @@ A full-featured Hotel Management System built with Spring Boot & React that supp
 | POST   | `/api/payments/create-order`        | Create payment order   | **User** |
 | POST   | `/api/payments/verify`              | Verify payment         | **User** |
 | GET    | `/api/payments/booking/{bookingId}` | Get payment by booking | **User** |
+
+---
+
+### 🔍 Search Endpoints
+| Method | Endpoint                   | Description               | Access     |
+| ------ | -------------------------- | ------------------------- | ---------- |
+| GET    | `/api/search/hotels`       | Search hotels by criteria | **Public** |
+| GET    | `/api/search/availability` | Check room availability   | **Public** |
+
+---
+
+
+<details> <summary><strong>📁 stayease.backend</strong></summary>
+</details><details> <summary><strong>📁 stayease.frontend</strong>
+
+</summary>
+
+</details>
+
+---
+
+## 🧪 Testing
+
+### Unit Test Coverage
+
+| Test Class             | Focus Area                                  |
+| ---------------------- | ------------------------------------------- |
+| **AuthServiceTest**    | User registration & authentication flows    |
+| **HotelServiceTest**   | Hotel CRUD operations & management          |
+| **BookingServiceTest** | Booking creation, validation & cancellation |
+| **PaymentServiceTest** | Payment processing & verification           |
+
+### 🚀 Run Tests
+```
+./mvnw test
+```
+
+---
+
+## 🗄 Database Schema
+### 📊 Key Entities Overview
+| Entity       | Important Fields                                   |
+| ------------ | -------------------------------------------------- |
+| **Users**    | id, username, email, password, role                |
+| **Hotels**   | id, name, description, location, amenities, images |
+| **Rooms**    | id, hotel_id, type, price, amenities, availability |
+| **Bookings** | id, user_id, room_id, check_in, check_out, status  |
+| **Payments** | id, booking_id, amount, status, razorpay_order_id  |
+
+---
+
+### ⚙️ Installation & Setup
+
+Prerequisites
+- Java 17+
+- MySQL 14+
+- Maven 3.6+
+- Node.js 18+
+
+---
+
+## Local Development Setup
+
+### 1️⃣ Clone Repository
+
+```bash
+git clone <your-repo-url>
+cd stayease.backend
+```
+---
+
+### 2️⃣ Create Database in MySQL
+```sql
+CREATE DATABASE stayease_db;
+```
+
+---
+
+### 3️⃣ Update application.properties
+```app.properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/stayease_db
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+```
+
+---
+
+### 4️⃣ Run the Backend Application
+
+```
+./mvnw spring-boot:run
+```
+### 5️⃣ Run the Frontend Application
+```
+cd stayease.frontend
+npm install
+npm run dev
+```
+
+---
+
+### 6️⃣ Access the Application
+
+| Service                  | URL                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| **Frontend Application** | [http://localhost:5173](http://localhost:5173)                                             |
+| **Backend API**          | [http://localhost:8080](http://localhost:8080)                                             |
+| **Swagger UI**           | [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html) |
+| **OpenAPI JSON Spec**    | [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)                     |
+
+---
+
+## 🚀 Deployment
+- Backend (Render)
+- Connect GitHub repository
+- Set environment variables
+- Auto-deploy on push
+
+## Frontend (Netlify)
+- Deploy frontend build
+- Set API Base URL: https://stayease-klft.onrender.com/api
+
+---
+
+## 🔐 Required Environment Variables
+```
+# Database
+JDBC_DATABASE_URL=your_database_url
+SPRING_DATASOURCE_USERNAME=your_username
+SPRING_DATASOURCE_PASSWORD=your_password
+
+# JWT
+JWT_SECRET=your_jwt_secret
+
+# Razorpay
+RAZORPAY_KEY_ID=your_razorpay_key
+RAZORPAY_KEY_SECRET=your_razorpay_secret
+
+# Server
+PORT=8080
+```
+## 📚 API Documentation
+| Resource         | URL                      |
+| ---------------- | ------------------------ |
+| **Swagger UI**   | `/swagger-ui/index.html` |
+| **OpenAPI Spec** | `/v3/api-docs`           |
+
+---
+
+## 👥 Default Users (Auto-Created on First Run)
+
+| Role          | Email                                           | Password |
+| ------------- | ----------------------------------------------- | -------- |
+| **Admin**     | [admin@stayease.com](mailto:admin@stayease.com) | admin123 |
+| **User**      | [user@stayease.com](mailto:user@stayease.com)   | user123  |
+| **Demo User** | [demo@stayease.com](mailto:demo@stayease.com)   | demo123  |
+
+---
+
+<h1>👨‍💻 Author</h1>
+<h2><b>Rachit Sharma</b></h2>
+<h3>rachitsharma300</h3>
+
+
+
+
